@@ -25,7 +25,7 @@ Terraform modules for provisioning cloud accounts to [Eon](https://eon.io) backu
 
 ```hcl
 module "eon_aws" {
-  source = "github.com/eon-io/eon-tf-infra//aws"
+  source = "github.com/eon-io/eon-tf-infra-module//aws"
 
   eon_account_id      = "your-eon-account-uuid"
   scanning_account_id = "123456789012"  # Provided by Eon
@@ -68,9 +68,7 @@ Provisions AWS IAM roles and policies for Eon source and/or restore accounts.
 - **Least Privilege**: Policies scoped to specific actions with tag conditions
 - **Explicit Denies**: Direct S3/DynamoDB data access denied on source account main role
 
-**Trusted Eon AWS Accounts:**
-- `058264520728` - Service account
-- `010438478826` - DR account
+The IAM roles trust Eon's AWS accounts for cross-account access. The `scanning_account_id` parameter is provided by Eon during onboarding.
 
 ## License
 
