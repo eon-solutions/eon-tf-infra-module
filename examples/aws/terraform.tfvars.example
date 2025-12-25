@@ -1,0 +1,26 @@
+# =============================================================================
+# AWS Configuration
+# =============================================================================
+
+aws_region  = "us-east-1"
+aws_profile = "default"  # Or your AWS CLI profile name
+
+# =============================================================================
+# Eon Provider Configuration
+# =============================================================================
+
+# Eon API credentials - obtain from Eon console
+eon_client_id     = "your-client-id"
+eon_client_secret = "your-client-secret"
+eon_endpoint      = "https://api.eon.io"
+eon_project_id    = "your-project-id"
+
+# =============================================================================
+# Eon Account Configuration
+# =============================================================================
+
+# Eon account UUID - obtain from Eon console
+eon_account_id = "12345678-1234-1234-1234-123456789012"
+
+# Scanning account ID - provided by Eon
+scanning_account_id = "058264520728"
