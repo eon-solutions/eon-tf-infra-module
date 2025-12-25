@@ -32,8 +32,13 @@ module "eon_aws" {
 
   enable_source_account  = true
   enable_restore_account = true
+
+  # Optional: Explicitly specify AWS account ID instead of using caller identity
+  # aws_account_id = "123456789012"
 }
 ```
+
+By default, the module uses the AWS caller identity to determine the account ID. To explicitly specify an account ID (useful for cross-account assume role scenarios), set `aws_account_id`.
 
 See [`examples/aws/`](./examples/aws/) for a complete working example.
 

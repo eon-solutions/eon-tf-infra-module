@@ -53,6 +53,17 @@ variable "enable_restore_account" {
 # AWS Account Configuration
 # =============================================================================
 
+# By default, the module uses the AWS caller identity to determine the account ID.
+# To explicitly specify an AWS account ID instead of using the caller identity,
+# set the aws_account_id variable:
+#
+#   aws_account_id = "123456789012"
+#
+# This is useful when:
+# - Running Terraform with cross-account assume role credentials
+# - The caller identity differs from the target account
+# - You want to ensure a specific account ID is used regardless of credentials
+
 variable "aws_account_id" {
   type        = string
   description = "AWS account ID. If not provided, uses the caller identity."
