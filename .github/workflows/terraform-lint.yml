@@ -25,6 +25,7 @@ jobs:
       - name: Terraform Format Check
         run: terraform fmt -check -recursive -diff
 
+      # AWS Module
       - name: Terraform Init (aws module)
         working-directory: aws
         run: terraform init -backend=false
@@ -33,10 +34,44 @@ jobs:
         working-directory: aws
         run: terraform validate
 
-      - name: Terraform Init (example)
+      - name: Terraform Init (aws example)
         working-directory: examples/aws
         run: terraform init -backend=false
 
-      - name: Terraform Validate (example)
+      - name: Terraform Validate (aws example)
         working-directory: examples/aws
+        run: terraform validate
+
+      # Azure Module
+      - name: Terraform Init (azure module)
+        working-directory: azure
+        run: terraform init -backend=false
+
+      - name: Terraform Validate (azure module)
+        working-directory: azure
+        run: terraform validate
+
+      - name: Terraform Init (azure example)
+        working-directory: examples/azure
+        run: terraform init -backend=false
+
+      - name: Terraform Validate (azure example)
+        working-directory: examples/azure
+        run: terraform validate
+
+      # GCP Module
+      - name: Terraform Init (gcp module)
+        working-directory: gcp
+        run: terraform init -backend=false
+
+      - name: Terraform Validate (gcp module)
+        working-directory: gcp
+        run: terraform validate
+
+      - name: Terraform Init (gcp example)
+        working-directory: examples/gcp
+        run: terraform init -backend=false
+
+      - name: Terraform Validate (gcp example)
+        working-directory: examples/gcp
         run: terraform validate

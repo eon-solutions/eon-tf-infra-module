@@ -133,10 +133,18 @@ resource "terraform_data" "reconnect_source_account" {
 resource "eon_source_account" "this" {
   count = var.enable_source_account && !local.source_account_exists ? 1 : 0
 
-  cloud_provider      = "AWS"
-  name                = var.source_account_name != null ? var.source_account_name : "AWS-${local.aws_account_id}"
-  provider_account_id = local.aws_account_id
-  role                = module.aws_source_account[0].eon_source_account_role_arn
+  cloud_provider = "AWS"
+  name           = var.source_account_name != null ? var.source_account_name : "AWS-${local.aws_account_id}"
+
+  aws {
+    role_arn = module.aws_source_account[0].eon_source_account_role_arn
+  }
+
+  # Empty GCP block required by provider schema (provider bug workaround)
+  gcp {
+    project_id      = ""
+    service_account = ""
+  }
 
   depends_on = [module.aws_source_account]
 }
@@ -176,10 +184,18 @@ resource "terraform_data" "reconnect_restore_account" {
 resource "eon_restore_account" "this" {
   count = var.enable_restore_account && !local.restore_account_exists ? 1 : 0
 
-  cloud_provider      = "AWS"
-  name                = var.restore_account_name != null ? var.restore_account_name : "AWS-${local.aws_account_id}"
-  provider_account_id = local.aws_account_id
-  role                = module.aws_restore_account[0].eon_restore_account_role_arn
+  cloud_provider = "AWS"
+  name           = var.restore_account_name != null ? var.restore_account_name : "AWS-${local.aws_account_id}"
+
+  aws {
+    role_arn = module.aws_restore_account[0].eon_restore_account_role_arn
+  }
+
+  # Empty GCP block required by provider schema (provider bug workaround)
+  gcp {
+    project_id      = ""
+    service_account = ""
+  }
 
   depends_on = [module.aws_restore_account]
 }
