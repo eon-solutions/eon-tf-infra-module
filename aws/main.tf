@@ -99,6 +99,25 @@ module "aws_restore_account" {
 }
 
 # -----------------------------------------------------------------------------
+# IAM Propagation Delay
+# -----------------------------------------------------------------------------
+
+# Wait for IAM roles/policies to propagate before Eon tries to assume them
+resource "time_sleep" "wait_for_source_iam" {
+  count = var.enable_source_account ? 1 : 0
+
+  depends_on      = [module.aws_source_account]
+  create_duration = "15s"
+}
+
+resource "time_sleep" "wait_for_restore_iam" {
+  count = var.enable_restore_account ? 1 : 0
+
+  depends_on      = [module.aws_restore_account]
+  create_duration = "15s"
+}
+
+# -----------------------------------------------------------------------------
 # Register Source Account with Eon
 # -----------------------------------------------------------------------------
 
@@ -126,7 +145,7 @@ resource "terraform_data" "reconnect_source_account" {
     EOT
   }
 
-  depends_on = [module.aws_source_account]
+  depends_on = [time_sleep.wait_for_source_iam]
 }
 
 # Create new source account only if it doesn't exist
@@ -146,7 +165,7 @@ resource "eon_source_account" "this" {
     service_account = ""
   }
 
-  depends_on = [module.aws_source_account]
+  depends_on = [time_sleep.wait_for_source_iam]
 }
 
 # -----------------------------------------------------------------------------
@@ -177,7 +196,7 @@ resource "terraform_data" "reconnect_restore_account" {
     EOT
   }
 
-  depends_on = [module.aws_restore_account]
+  depends_on = [time_sleep.wait_for_restore_iam]
 }
 
 # Create new restore account only if it doesn't exist
@@ -197,5 +216,5 @@ resource "eon_restore_account" "this" {
     service_account = ""
   }
 
-  depends_on = [module.aws_restore_account]
+  depends_on = [time_sleep.wait_for_restore_iam]
 }
