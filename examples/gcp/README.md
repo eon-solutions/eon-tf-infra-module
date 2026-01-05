@@ -99,21 +99,15 @@ This behavior is enabled by default and can be disabled with `reconnect_if_exist
 
 ## Known Limitations
 
-### Module Instantiation
+### Firestore Database Persistence
 
-The GCP external modules have `required_providers` blocks which means they cannot use Terraform's `count` or `for_each`. As a result, both source and restore infrastructure modules are always instantiated when the Eon GCP module is used. However, the Eon account registration is still conditional based on `enable_source_account` and `enable_restore_account`.
+The Firestore database used for restore command results has `deletion_policy = "ABANDON"` to prevent accidental data loss. This means running `terraform destroy` will remove the database from Terraform state but not actually delete it from GCP.
 
-### IAM Propagation Delay
+If you re-apply Terraform to the same GCP project after a destroy, you'll encounter a "Database already exists" error. To resolve this, import the existing database into your state:
 
-GCP IAM changes can take up to 60 seconds to propagate. The module includes a built-in delay to ensure IAM bindings (especially workload identity) are effective before Eon attempts to verify connectivity.
-
-### Bucket Name Restrictions
-
-If you encounter "bucket name restricted" errors during apply, this typically means bucket names were previously used and deleted in your project. GCS has a soft-delete retention period during which bucket names cannot be reused. To work around this, you can customize the `eon_restore_regions` variable to exclude affected regions:
-
-```hcl
-eon_restore_regions = [
-  "us-central1", "us-east1", "europe-west1"
-  # Add only the regions you need
-]
+```bash
+terraform import 'module.eon_gcp.module.gcp_restore_setup.google_firestore_database.restore_cmds_db[0]' \
+  'projects/YOUR_PROJECT_ID/databases/eon-cmd-results'
 ```
+
+Then run `terraform apply` again to complete the setup.
