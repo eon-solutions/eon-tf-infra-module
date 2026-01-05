@@ -151,17 +151,8 @@ variable "firestore_location" {
 
 variable "eon_restore_regions" {
   type        = list(string)
-  description = "List of GCP regions where restore is supported."
-  default = [
-    # US regions
-    "us-east1", "us-east4", "us-east5", "us-central1", "us-west1", "us-west2", "us-west3", "us-west4", "us-south1",
-    # Europe regions
-    "europe-west1", "europe-west2", "europe-west3", "europe-west4", "europe-west6", "europe-west8", "europe-west9", "europe-west10", "europe-west12", "europe-north1", "europe-central2", "europe-southwest1",
-    # Asia regions
-    "asia-east1", "asia-east2", "asia-northeast1", "asia-northeast2", "asia-northeast3", "asia-south1", "asia-south2", "asia-southeast1", "asia-southeast2",
-    # Other regions
-    "australia-southeast1", "australia-southeast2", "southamerica-east1", "southamerica-west1", "northamerica-northeast1", "northamerica-northeast2", "me-west1", "me-central1", "me-central2", "africa-south1"
-  ]
+  description = "List of GCP regions where restore buckets will be created. Defaults to US regions."
+  default     = ["us-east1", "us-east4", "us-east5", "us-central1", "us-west1", "us-west2", "us-west3", "us-west4", "us-south1"]
 }
 
 # =============================================================================

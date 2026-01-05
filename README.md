@@ -204,14 +204,7 @@ All modules are idempotent:
 - **Workload Identity**: Uses GCP Workload Identity for secure cross-project access
 - **Service Accounts**: Dedicated service accounts with minimal permissions
 - **External ID**: Uses Eon account UUID for confused deputy protection
-
-## Known Issues
-
-### Eon Provider Schema Bug (Azure)
-
-The `eon-io/eon` Terraform provider v2.x has a schema issue where `gcp` block attributes are marked as required even when using Azure. The Azure module includes placeholder `gcp {}` blocks as a workaround. This does not affect functionality.
-
-See: [terraform-provider-eon/internal/provider/cloud_account_common.go](https://github.com/eon-io/terraform-provider-eon/blob/main/internal/provider/cloud_account_common.go)
+- **IAM Propagation**: Includes built-in delay for IAM binding propagation
 
 ## License
 

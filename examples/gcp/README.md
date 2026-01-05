@@ -99,4 +99,21 @@ This behavior is enabled by default and can be disabled with `reconnect_if_exist
 
 ## Known Limitations
 
+### Module Instantiation
+
 The GCP external modules have `required_providers` blocks which means they cannot use Terraform's `count` or `for_each`. As a result, both source and restore infrastructure modules are always instantiated when the Eon GCP module is used. However, the Eon account registration is still conditional based on `enable_source_account` and `enable_restore_account`.
+
+### IAM Propagation Delay
+
+GCP IAM changes can take up to 60 seconds to propagate. The module includes a built-in delay to ensure IAM bindings (especially workload identity) are effective before Eon attempts to verify connectivity.
+
+### Bucket Name Restrictions
+
+If you encounter "bucket name restricted" errors during apply, this typically means bucket names were previously used and deleted in your project. GCS has a soft-delete retention period during which bucket names cannot be reused. To work around this, you can customize the `eon_restore_regions` variable to exclude affected regions:
+
+```hcl
+eon_restore_regions = [
+  "us-central1", "us-east1", "europe-west1"
+  # Add only the regions you need
+]
+```

@@ -96,6 +96,23 @@ module "gcp_source_setup" {
 }
 
 # -----------------------------------------------------------------------------
+# Pre-enable Firestore API for Restore Account
+# -----------------------------------------------------------------------------
+# The external module enables APIs but Firestore can take time to propagate.
+# Pre-enabling with a delay ensures the database creation succeeds on first try.
+
+resource "google_project_service" "firestore_api" {
+  project            = var.project_id
+  service            = "firestore.googleapis.com"
+  disable_on_destroy = false
+}
+
+resource "time_sleep" "wait_for_firestore_api" {
+  depends_on      = [google_project_service.firestore_api]
+  create_duration = "30s"
+}
+
+# -----------------------------------------------------------------------------
 # GCP Restore Account Infrastructure
 # -----------------------------------------------------------------------------
 # Note: This module is always instantiated due to Terraform limitations.
@@ -104,8 +121,9 @@ module "gcp_source_setup" {
 module "gcp_restore_setup" {
   source = "https://eon-public-b2b628cc-1d96-4fda-8dae-c3b1ad3ea03b.s3.amazonaws.com/gcp-eon-setup.zip"
 
-  account_type                  = "restore"
-  project_id                    = var.project_id
+  account_type = "restore"
+  # Use time_sleep id to create implicit dependency on Firestore API propagation
+  project_id                    = time_sleep.wait_for_firestore_api.id != "" ? var.project_id : var.project_id
   eon_account_id                = var.eon_account_id
   control_plane_service_account = var.control_plane_service_account
 
@@ -119,6 +137,28 @@ module "gcp_restore_setup" {
   enable_gce      = var.enable_gce
   enable_cloudsql = var.enable_cloudsql
   enable_bigquery = var.enable_bigquery
+}
+
+# -----------------------------------------------------------------------------
+# Wait for IAM Propagation
+# -----------------------------------------------------------------------------
+# GCP IAM changes can take up to 60 seconds to propagate. This delay ensures
+# that all IAM bindings (especially workload identity) are effective before
+# Eon attempts to verify connectivity by impersonating the service accounts.
+
+resource "time_sleep" "wait_for_iam_propagation" {
+  depends_on = [
+    module.gcp_source_setup,
+    module.gcp_restore_setup,
+  ]
+
+  create_duration = "60s"
+
+  # Only wait on initial creation, not on every apply
+  triggers = {
+    source_sa  = module.gcp_source_setup.service_account_emails.source_sa
+    restore_sa = module.gcp_restore_setup.service_account_emails.restore_sa
+  }
 }
 
 # -----------------------------------------------------------------------------
@@ -147,6 +187,9 @@ resource "terraform_data" "reconnect_source_account" {
       echo "Successfully reconnected source account ${local.source_account_id}"
     EOT
   }
+
+  # Wait for IAM propagation before Eon verifies connectivity
+  depends_on = [time_sleep.wait_for_iam_propagation]
 }
 
 # Create new source account only if enabled and doesn't exist
@@ -160,6 +203,9 @@ resource "eon_source_account" "this" {
     project_id      = var.project_id
     service_account = module.gcp_source_setup.service_account_emails.source_sa
   }
+
+  # Wait for IAM propagation before Eon verifies connectivity
+  depends_on = [time_sleep.wait_for_iam_propagation]
 }
 
 # -----------------------------------------------------------------------------
@@ -188,6 +234,9 @@ resource "terraform_data" "reconnect_restore_account" {
       echo "Successfully reconnected restore account ${local.restore_account_id}"
     EOT
   }
+
+  # Wait for IAM propagation before Eon verifies connectivity
+  depends_on = [time_sleep.wait_for_iam_propagation]
 }
 
 # Create new restore account only if enabled and doesn't exist
@@ -201,4 +250,7 @@ resource "eon_restore_account" "this" {
     project_id      = var.project_id
     service_account = module.gcp_restore_setup.service_account_emails.restore_sa
   }
+
+  # Wait for IAM propagation before Eon verifies connectivity
+  depends_on = [time_sleep.wait_for_iam_propagation]
 }
