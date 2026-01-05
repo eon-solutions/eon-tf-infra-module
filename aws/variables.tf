@@ -49,6 +49,12 @@ variable "enable_restore_account" {
   default     = false
 }
 
+variable "reconnect_if_existing" {
+  type        = bool
+  description = "If an account already exists in Eon but is disconnected, automatically reconnect it. When false, existing disconnected accounts will be left as-is."
+  default     = true
+}
+
 # =============================================================================
 # AWS Account Configuration
 # =============================================================================

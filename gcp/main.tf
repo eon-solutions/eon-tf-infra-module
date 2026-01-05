@@ -1,22 +1,32 @@
 # =============================================================================
-# Eon AWS Account Provisioning Module
+# Eon GCP Account Provisioning Module
 # =============================================================================
 #
-# This module provisions AWS accounts for Eon by:
-# 1. Creating IAM roles and policies for Eon cross-account access
-# 2. Registering the account as a source and/or restore account in Eon
+# This module provisions GCP projects for Eon by:
+# 1. Creating service accounts and custom IAM roles for Eon access
+# 2. Registering the project as a source and/or restore account in Eon
+#
+# Note: Due to Terraform limitations with the external GCP setup module,
+# GCP infrastructure is created for both source and restore accounts.
+# Only the enabled account types are registered with Eon.
+#
+# Prerequisites:
+#   - GCP project with appropriate APIs enabled
+#   - Eon account ID and control plane service account information
 #
 # Usage:
-#   module "eon_aws" {
-#     source = "github.com/eon-solutions/eon-tf-infra-module//aws"
+#   module "eon_gcp" {
+#     source = "github.com/eon-solutions/eon-tf-infra-module//gcp"
 #
-#     eon_account_id      = "your-eon-account-uuid"
-#     scanning_account_id = "your-scanning-account-id"
+#     project_id                    = "your-gcp-project-id"
+#     eon_account_id                = "your-eon-account-uuid"
+#     control_plane_service_account = "eon-control-plane@eon-project.iam.gserviceaccount.com"
 #
-#     # Enable source account (for backups)
+#     # For source accounts
 #     enable_source_account = true
+#     scanning_project_id   = "eon-scanning-project-id"
 #
-#     # Enable restore account (for restores)
+#     # For restore accounts
 #     enable_restore_account = true
 #   }
 #
@@ -25,8 +35,6 @@
 # -----------------------------------------------------------------------------
 # Data Sources
 # -----------------------------------------------------------------------------
-
-data "aws_caller_identity" "current" {}
 
 # Get existing source accounts from Eon
 data "eon_source_accounts" "existing" {}
@@ -39,23 +47,20 @@ data "eon_restore_accounts" "existing" {}
 # -----------------------------------------------------------------------------
 
 locals {
-  # Use explicitly provided AWS account ID, or fall back to caller identity
-  aws_account_id = coalesce(var.aws_account_id, data.aws_caller_identity.current.account_id)
-
-  # Find existing source account for this AWS account
+  # Find existing source account for this GCP project
   existing_source_account = [
     for acc in data.eon_source_accounts.existing.accounts :
-    acc if acc.provider_account_id == local.aws_account_id
+    acc if acc.provider_account_id == var.project_id
   ]
   source_account_exists       = length(local.existing_source_account) > 0
   source_account_id           = local.source_account_exists ? local.existing_source_account[0].id : null
   source_account_status       = local.source_account_exists ? local.existing_source_account[0].status : null
   source_account_disconnected = local.source_account_exists && local.source_account_status == "DISCONNECTED"
 
-  # Find existing restore account for this AWS account
+  # Find existing restore account for this GCP project
   existing_restore_account = [
     for acc in data.eon_restore_accounts.existing.accounts :
-    acc if acc.provider_account_id == local.aws_account_id
+    acc if acc.provider_account_id == var.project_id
   ]
   restore_account_exists       = length(local.existing_restore_account) > 0
   restore_account_id           = local.restore_account_exists ? local.existing_restore_account[0].id : null
@@ -64,38 +69,56 @@ locals {
 }
 
 # -----------------------------------------------------------------------------
-# AWS Source Account Infrastructure
+# GCP Source Account Infrastructure
 # -----------------------------------------------------------------------------
+# Note: This module is always instantiated due to Terraform limitations.
+# The Eon registration is controlled by enable_source_account.
 
-module "aws_source_account" {
-  count  = var.enable_source_account ? 1 : 0
-  source = "https://eon-public-b2b628cc-1d96-4fda-8dae-c3b1ad3ea03b.s3.amazonaws.com/eon-aws-source-account-tf.zip"
+module "gcp_source_setup" {
+  source = "https://eon-public-b2b628cc-1d96-4fda-8dae-c3b1ad3ea03b.s3.amazonaws.com/gcp-eon-setup.zip"
 
-  eon_account_id      = var.eon_account_id
-  scanning_account_id = var.scanning_account_id
-  role_name           = var.source_role_name
+  account_type                  = "source"
+  project_id                    = var.project_id
+  eon_account_id                = var.eon_account_id
+  control_plane_service_account = var.control_plane_service_account
+  scanning_project_id           = var.scanning_project_id
 
-  enable_s3_cdc_backup                      = var.enable_s3_cdc_backup
-  enable_s3_bucket_notifications_management = var.enable_s3_bucket_notifications_management
-  enable_dynamodb_streams                   = var.enable_dynamodb_streams
-  enable_eks                                = var.enable_eks
-  enable_account_metrics                    = var.source_enable_account_metrics
-  enable_temporary_volumes_method           = var.enable_temporary_volumes_method
-  enable_aurora_clone                       = var.enable_aurora_clone
-  enable_s3_inventory_management            = var.enable_s3_inventory_management
+  # Optional organization/folder scope
+  organization_id = var.organization_id
+  folder_id       = var.folder_id
+
+  # Feature toggles
+  enable_gcs                                = var.enable_gcs
+  enable_gcs_bucket_notification_management = var.enable_gcs_bucket_notification_management
+  enable_gce                                = var.enable_gce
+  enable_cloudsql                           = var.enable_cloudsql
+  enable_bigquery                           = var.enable_bigquery
 }
 
 # -----------------------------------------------------------------------------
-# AWS Restore Account Infrastructure
+# GCP Restore Account Infrastructure
 # -----------------------------------------------------------------------------
+# Note: This module is always instantiated due to Terraform limitations.
+# The Eon registration is controlled by enable_restore_account.
 
-module "aws_restore_account" {
-  count  = var.enable_restore_account ? 1 : 0
-  source = "https://eon-public-b2b628cc-1d96-4fda-8dae-c3b1ad3ea03b.s3.amazonaws.com/eon-aws-restore-account-tf.zip"
+module "gcp_restore_setup" {
+  source = "https://eon-public-b2b628cc-1d96-4fda-8dae-c3b1ad3ea03b.s3.amazonaws.com/gcp-eon-setup.zip"
 
-  eon_account_id         = var.eon_account_id
-  role_name              = var.restore_role_name
-  enable_account_metrics = var.restore_enable_account_metrics
+  account_type                  = "restore"
+  project_id                    = var.project_id
+  eon_account_id                = var.eon_account_id
+  control_plane_service_account = var.control_plane_service_account
+
+  # Restore-specific options
+  host_project_id     = var.host_project_id
+  firestore_location  = var.firestore_location
+  eon_restore_regions = var.eon_restore_regions
+
+  # Feature toggles
+  enable_gcs      = var.enable_gcs
+  enable_gce      = var.enable_gce
+  enable_cloudsql = var.enable_cloudsql
+  enable_bigquery = var.enable_bigquery
 }
 
 # -----------------------------------------------------------------------------
@@ -106,8 +129,7 @@ module "aws_restore_account" {
 resource "terraform_data" "reconnect_source_account" {
   count = var.enable_source_account && var.reconnect_if_existing && local.source_account_disconnected ? 1 : 0
 
-  # Trigger reconnect when the role ARN changes
-  input = module.aws_source_account[0].eon_source_account_role_arn
+  input = module.gcp_source_setup.service_account_emails.source_sa
 
   provisioner "local-exec" {
     command = <<-EOT
@@ -120,25 +142,24 @@ resource "terraform_data" "reconnect_source_account" {
       curl -sf -X POST '${var.eon_endpoint}/api/v1/projects/${var.eon_project_id}/source-accounts/${local.source_account_id}/reconnect' \
         -H "Authorization: Bearer $TOKEN" \
         -H 'Content-Type: application/json' \
-        -d '{"sourceAccountAttributes": {"cloudProvider": "AWS", "aws": {"roleArn": "${module.aws_source_account[0].eon_source_account_role_arn}"}}}'
+        -d '{"sourceAccountAttributes": {"cloudProvider": "GCP", "gcp": {"serviceAccount": "${module.gcp_source_setup.service_account_emails.source_sa}"}}}'
 
       echo "Successfully reconnected source account ${local.source_account_id}"
     EOT
   }
-
-  depends_on = [module.aws_source_account]
 }
 
-# Create new source account only if it doesn't exist
+# Create new source account only if enabled and doesn't exist
 resource "eon_source_account" "this" {
   count = var.enable_source_account && !local.source_account_exists ? 1 : 0
 
-  cloud_provider      = "AWS"
-  name                = var.source_account_name != null ? var.source_account_name : "AWS-${local.aws_account_id}"
-  provider_account_id = local.aws_account_id
-  role                = module.aws_source_account[0].eon_source_account_role_arn
+  cloud_provider = "GCP"
+  name           = var.source_account_name != null ? var.source_account_name : "GCP-${var.project_id}"
 
-  depends_on = [module.aws_source_account]
+  gcp {
+    project_id      = var.project_id
+    service_account = module.gcp_source_setup.service_account_emails.source_sa
+  }
 }
 
 # -----------------------------------------------------------------------------
@@ -149,8 +170,7 @@ resource "eon_source_account" "this" {
 resource "terraform_data" "reconnect_restore_account" {
   count = var.enable_restore_account && var.reconnect_if_existing && local.restore_account_disconnected ? 1 : 0
 
-  # Trigger reconnect when the role ARN changes
-  input = module.aws_restore_account[0].eon_restore_account_role_arn
+  input = module.gcp_restore_setup.service_account_emails.restore_sa
 
   provisioner "local-exec" {
     command = <<-EOT
@@ -163,23 +183,22 @@ resource "terraform_data" "reconnect_restore_account" {
       curl -sf -X POST '${var.eon_endpoint}/api/v1/projects/${var.eon_project_id}/restore-accounts/${local.restore_account_id}/reconnect' \
         -H "Authorization: Bearer $TOKEN" \
         -H 'Content-Type: application/json' \
-        -d '{"restoreAccountAttributes": {"cloudProvider": "AWS", "aws": {"roleArn": "${module.aws_restore_account[0].eon_restore_account_role_arn}"}}}'
+        -d '{"restoreAccountAttributes": {"cloudProvider": "GCP", "gcp": {"serviceAccount": "${module.gcp_restore_setup.service_account_emails.restore_sa}"}}}'
 
       echo "Successfully reconnected restore account ${local.restore_account_id}"
     EOT
   }
-
-  depends_on = [module.aws_restore_account]
 }
 
-# Create new restore account only if it doesn't exist
+# Create new restore account only if enabled and doesn't exist
 resource "eon_restore_account" "this" {
   count = var.enable_restore_account && !local.restore_account_exists ? 1 : 0
 
-  cloud_provider      = "AWS"
-  name                = var.restore_account_name != null ? var.restore_account_name : "AWS-${local.aws_account_id}"
-  provider_account_id = local.aws_account_id
-  role                = module.aws_restore_account[0].eon_restore_account_role_arn
+  cloud_provider = "GCP"
+  name           = var.restore_account_name != null ? var.restore_account_name : "GCP-${var.project_id}"
 
-  depends_on = [module.aws_restore_account]
+  gcp {
+    project_id      = var.project_id
+    service_account = module.gcp_restore_setup.service_account_emails.restore_sa
+  }
 }

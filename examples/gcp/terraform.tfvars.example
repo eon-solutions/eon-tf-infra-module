@@ -1,0 +1,28 @@
+# =============================================================================
+# Eon Provider Configuration
+# =============================================================================
+
+# Eon API credentials - obtain from Eon console
+eon_client_id     = "your-client-id"
+eon_client_secret = "your-client-secret"
+eon_endpoint      = "https://api.eon.io"
+eon_project_id    = "your-project-id"
+
+# Eon account UUID - obtain from Eon console
+eon_account_id = "12345678-1234-1234-1234-123456789012"
+
+# =============================================================================
+# GCP Configuration
+# =============================================================================
+
+# GCP project ID
+project_id = "your-gcp-project-id"
+
+# GCP region (optional, defaults to us-central1)
+gcp_region = "us-central1"
+
+# Eon control plane service account - provided by Eon
+control_plane_service_account = "eon-control-plane@eon-project.iam.gserviceaccount.com"
+
+# Eon scanning project ID - provided by Eon (required for source accounts)
+scanning_project_id = "eon-scanning-project"

@@ -1,23 +1,30 @@
 # =============================================================================
-# Eon AWS Account Provisioning Module
+# Eon Azure Account Provisioning Module
 # =============================================================================
 #
-# This module provisions AWS accounts for Eon by:
-# 1. Creating IAM roles and policies for Eon cross-account access
-# 2. Registering the account as a source and/or restore account in Eon
+# This module provisions Azure subscriptions for Eon by:
+# 1. Creating custom Azure roles and role assignments for Eon access
+# 2. Registering the subscription as a source and/or restore account in Eon
+#
+# Prerequisites:
+#   - Azure App Registration with Eon's management and backup apps configured
+#   - Azure AD service principals created for the apps in the target tenant
 #
 # Usage:
-#   module "eon_aws" {
-#     source = "github.com/eon-solutions/eon-tf-infra-module//aws"
+#   module "eon_azure" {
+#     source = "github.com/eon-solutions/eon-tf-infra-module//azure"
 #
-#     eon_account_id      = "your-eon-account-uuid"
-#     scanning_account_id = "your-scanning-account-id"
+#     subscription_id   = "your-azure-subscription-id"
+#     management_app_id = "eon-management-app-id"
+#     backup_app_id     = "eon-backup-app-id"
 #
 #     # Enable source account (for backups)
 #     enable_source_account = true
 #
 #     # Enable restore account (for restores)
-#     enable_restore_account = true
+#     enable_restore_account  = true
+#     backup_restore_app_id   = "eon-backup-restore-app-id"
+#     restore_location        = "eastus"
 #   }
 #
 # =============================================================================
@@ -25,8 +32,6 @@
 # -----------------------------------------------------------------------------
 # Data Sources
 # -----------------------------------------------------------------------------
-
-data "aws_caller_identity" "current" {}
 
 # Get existing source accounts from Eon
 data "eon_source_accounts" "existing" {}
@@ -39,23 +44,20 @@ data "eon_restore_accounts" "existing" {}
 # -----------------------------------------------------------------------------
 
 locals {
-  # Use explicitly provided AWS account ID, or fall back to caller identity
-  aws_account_id = coalesce(var.aws_account_id, data.aws_caller_identity.current.account_id)
-
-  # Find existing source account for this AWS account
+  # Find existing source account for this Azure subscription
   existing_source_account = [
     for acc in data.eon_source_accounts.existing.accounts :
-    acc if acc.provider_account_id == local.aws_account_id
+    acc if acc.provider_account_id == var.subscription_id
   ]
   source_account_exists       = length(local.existing_source_account) > 0
   source_account_id           = local.source_account_exists ? local.existing_source_account[0].id : null
   source_account_status       = local.source_account_exists ? local.existing_source_account[0].status : null
   source_account_disconnected = local.source_account_exists && local.source_account_status == "DISCONNECTED"
 
-  # Find existing restore account for this AWS account
+  # Find existing restore account for this Azure subscription
   existing_restore_account = [
     for acc in data.eon_restore_accounts.existing.accounts :
-    acc if acc.provider_account_id == local.aws_account_id
+    acc if acc.provider_account_id == var.subscription_id
   ]
   restore_account_exists       = length(local.existing_restore_account) > 0
   restore_account_id           = local.restore_account_exists ? local.existing_restore_account[0].id : null
@@ -64,38 +66,46 @@ locals {
 }
 
 # -----------------------------------------------------------------------------
-# AWS Source Account Infrastructure
+# Azure Source Account Infrastructure
 # -----------------------------------------------------------------------------
 
-module "aws_source_account" {
+module "azure_source_account" {
   count  = var.enable_source_account ? 1 : 0
-  source = "https://eon-public-b2b628cc-1d96-4fda-8dae-c3b1ad3ea03b.s3.amazonaws.com/eon-aws-source-account-tf.zip"
+  source = "https://eon.blob.core.windows.net/public/onboarding/v1.1.3/terraform/source.zip"
 
-  eon_account_id      = var.eon_account_id
-  scanning_account_id = var.scanning_account_id
-  role_name           = var.source_role_name
+  subscription_id     = var.subscription_id
+  management_group_id = var.management_group_id
+  management_app_id   = var.management_app_id
+  backup_app_id       = var.backup_app_id
 
-  enable_s3_cdc_backup                      = var.enable_s3_cdc_backup
-  enable_s3_bucket_notifications_management = var.enable_s3_bucket_notifications_management
-  enable_dynamodb_streams                   = var.enable_dynamodb_streams
-  enable_eks                                = var.enable_eks
-  enable_account_metrics                    = var.source_enable_account_metrics
-  enable_temporary_volumes_method           = var.enable_temporary_volumes_method
-  enable_aurora_clone                       = var.enable_aurora_clone
-  enable_s3_inventory_management            = var.enable_s3_inventory_management
+  eon_backup_rg_location     = var.source_resource_group_location
+  eon_backup_rg_tags         = var.source_resource_group_tags
+  management_role_name       = var.source_management_role_name
+  management_admin_role_name = var.source_management_admin_role_name
+  backup_role_name           = var.source_backup_role_name
 }
 
 # -----------------------------------------------------------------------------
-# AWS Restore Account Infrastructure
+# Azure Restore Account Infrastructure
 # -----------------------------------------------------------------------------
 
-module "aws_restore_account" {
+module "azure_restore_account" {
   count  = var.enable_restore_account ? 1 : 0
-  source = "https://eon-public-b2b628cc-1d96-4fda-8dae-c3b1ad3ea03b.s3.amazonaws.com/eon-aws-restore-account-tf.zip"
+  source = "https://eon.blob.core.windows.net/public/onboarding/v1.1.3/terraform/restore.zip"
 
-  eon_account_id         = var.eon_account_id
-  role_name              = var.restore_role_name
-  enable_account_metrics = var.restore_enable_account_metrics
+  project_id            = var.eon_project_id
+  subscription_id       = var.subscription_id
+  management_app_id     = var.management_app_id
+  backup_restore_app_id = var.backup_restore_app_id
+  location              = var.restore_location
+
+  resource_group_name          = var.restore_resource_group_name
+  tags                         = var.restore_resource_group_tags
+  adx_service_principal_id     = var.adx_service_principal_id
+  restore_backup_role_name     = var.restore_backup_role_name
+  restore_management_role_name = var.restore_management_role_name
+  restore_operations_role_name = var.restore_operations_role_name
+  restore_role_name            = var.restore_role_name
 }
 
 # -----------------------------------------------------------------------------
@@ -106,8 +116,8 @@ module "aws_restore_account" {
 resource "terraform_data" "reconnect_source_account" {
   count = var.enable_source_account && var.reconnect_if_existing && local.source_account_disconnected ? 1 : 0
 
-  # Trigger reconnect when the role ARN changes
-  input = module.aws_source_account[0].eon_source_account_role_arn
+  # Trigger reconnect when the subscription changes
+  input = var.subscription_id
 
   provisioner "local-exec" {
     command = <<-EOT
@@ -120,25 +130,37 @@ resource "terraform_data" "reconnect_source_account" {
       curl -sf -X POST '${var.eon_endpoint}/api/v1/projects/${var.eon_project_id}/source-accounts/${local.source_account_id}/reconnect' \
         -H "Authorization: Bearer $TOKEN" \
         -H 'Content-Type: application/json' \
-        -d '{"sourceAccountAttributes": {"cloudProvider": "AWS", "aws": {"roleArn": "${module.aws_source_account[0].eon_source_account_role_arn}"}}}'
+        -d '{"sourceAccountAttributes": {"cloudProvider": "AZURE", "azure": {"tenantId": "${var.tenant_id}", "subscriptionId": "${var.subscription_id}"}}}'
 
       echo "Successfully reconnected source account ${local.source_account_id}"
     EOT
   }
 
-  depends_on = [module.aws_source_account]
+  depends_on = [module.azure_source_account]
 }
 
 # Create new source account only if it doesn't exist
+# Note: The gcp block with placeholder values is required due to a provider schema bug
+# where gcp attributes are marked as required even for non-GCP cloud providers.
 resource "eon_source_account" "this" {
   count = var.enable_source_account && !local.source_account_exists ? 1 : 0
 
-  cloud_provider      = "AWS"
-  name                = var.source_account_name != null ? var.source_account_name : "AWS-${local.aws_account_id}"
-  provider_account_id = local.aws_account_id
-  role                = module.aws_source_account[0].eon_source_account_role_arn
+  cloud_provider = "AZURE"
+  name           = var.source_account_name != null ? var.source_account_name : "Azure-${var.subscription_id}"
 
-  depends_on = [module.aws_source_account]
+  azure {
+    tenant_id           = var.tenant_id
+    subscription_id     = var.subscription_id
+    resource_group_name = var.source_resource_group_name
+  }
+
+  # Placeholder for provider schema requirement - not used for Azure
+  gcp {
+    project_id      = "placeholder"
+    service_account = "placeholder@placeholder.iam.gserviceaccount.com"
+  }
+
+  depends_on = [module.azure_source_account]
 }
 
 # -----------------------------------------------------------------------------
@@ -149,8 +171,8 @@ resource "eon_source_account" "this" {
 resource "terraform_data" "reconnect_restore_account" {
   count = var.enable_restore_account && var.reconnect_if_existing && local.restore_account_disconnected ? 1 : 0
 
-  # Trigger reconnect when the role ARN changes
-  input = module.aws_restore_account[0].eon_restore_account_role_arn
+  # Trigger reconnect when the subscription changes
+  input = var.subscription_id
 
   provisioner "local-exec" {
     command = <<-EOT
@@ -163,23 +185,35 @@ resource "terraform_data" "reconnect_restore_account" {
       curl -sf -X POST '${var.eon_endpoint}/api/v1/projects/${var.eon_project_id}/restore-accounts/${local.restore_account_id}/reconnect' \
         -H "Authorization: Bearer $TOKEN" \
         -H 'Content-Type: application/json' \
-        -d '{"restoreAccountAttributes": {"cloudProvider": "AWS", "aws": {"roleArn": "${module.aws_restore_account[0].eon_restore_account_role_arn}"}}}'
+        -d '{"restoreAccountAttributes": {"cloudProvider": "AZURE", "azure": {"tenantId": "${var.tenant_id}", "subscriptionId": "${var.subscription_id}"}}}'
 
       echo "Successfully reconnected restore account ${local.restore_account_id}"
     EOT
   }
 
-  depends_on = [module.aws_restore_account]
+  depends_on = [module.azure_restore_account]
 }
 
 # Create new restore account only if it doesn't exist
+# Note: The gcp block with placeholder values is required due to a provider schema bug
+# where gcp attributes are marked as required even for non-GCP cloud providers.
 resource "eon_restore_account" "this" {
   count = var.enable_restore_account && !local.restore_account_exists ? 1 : 0
 
-  cloud_provider      = "AWS"
-  name                = var.restore_account_name != null ? var.restore_account_name : "AWS-${local.aws_account_id}"
-  provider_account_id = local.aws_account_id
-  role                = module.aws_restore_account[0].eon_restore_account_role_arn
+  cloud_provider = "AZURE"
+  name           = var.restore_account_name != null ? var.restore_account_name : "Azure-${var.subscription_id}"
 
-  depends_on = [module.aws_restore_account]
+  azure {
+    tenant_id           = var.tenant_id
+    subscription_id     = var.subscription_id
+    resource_group_name = var.restore_resource_group_name
+  }
+
+  # Placeholder for provider schema requirement - not used for Azure
+  gcp {
+    project_id      = "placeholder"
+    service_account = "placeholder@placeholder.iam.gserviceaccount.com"
+  }
+
+  depends_on = [module.azure_restore_account]
 }
