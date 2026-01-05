@@ -44,7 +44,7 @@ locals {
 
   # Find existing source account for this AWS account
   existing_source_account = [
-    for acc in data.eon_source_accounts.existing.accounts :
+    for acc in coalesce(data.eon_source_accounts.existing.accounts, []) :
     acc if acc.provider_account_id == local.aws_account_id
   ]
   source_account_exists       = length(local.existing_source_account) > 0
@@ -54,7 +54,7 @@ locals {
 
   # Find existing restore account for this AWS account
   existing_restore_account = [
-    for acc in data.eon_restore_accounts.existing.accounts :
+    for acc in coalesce(data.eon_restore_accounts.existing.accounts, []) :
     acc if acc.provider_account_id == local.aws_account_id
   ]
   restore_account_exists       = length(local.existing_restore_account) > 0
