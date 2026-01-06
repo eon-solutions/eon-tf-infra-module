@@ -34,7 +34,7 @@ output "eon_source_account_id" {
 
 output "eon_source_account_status" {
   value = var.enable_source_account ? (
-    local.source_account_exists ? (local.source_account_disconnected ? "RECONNECTED" : local.source_account_status) : eon_source_account.this[0].status
+    local.source_account_exists ? (local.source_account_needs_reconnect ? "RECONNECTED" : local.source_account_status) : eon_source_account.this[0].status
   ) : null
   description = "The connection status of the source account in Eon"
 }
@@ -66,7 +66,7 @@ output "eon_restore_account_id" {
 
 output "eon_restore_account_status" {
   value = var.enable_restore_account ? (
-    local.restore_account_exists ? (local.restore_account_disconnected ? "RECONNECTED" : local.restore_account_status) : eon_restore_account.this[0].status
+    local.restore_account_exists ? (local.restore_account_needs_reconnect ? "RECONNECTED" : local.restore_account_status) : eon_restore_account.this[0].status
   ) : null
   description = "The connection status of the restore account in Eon"
 }

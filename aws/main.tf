@@ -47,20 +47,20 @@ locals {
     for acc in coalesce(data.eon_source_accounts.existing.accounts, []) :
     acc if acc.provider_account_id == local.aws_account_id
   ]
-  source_account_exists       = length(local.existing_source_account) > 0
-  source_account_id           = local.source_account_exists ? local.existing_source_account[0].id : null
-  source_account_status       = local.source_account_exists ? local.existing_source_account[0].status : null
-  source_account_disconnected = local.source_account_exists && local.source_account_status == "DISCONNECTED"
+  source_account_exists         = length(local.existing_source_account) > 0
+  source_account_id             = local.source_account_exists ? local.existing_source_account[0].id : null
+  source_account_status         = local.source_account_exists ? local.existing_source_account[0].status : null
+  source_account_needs_reconnect = local.source_account_exists && contains(["DISCONNECTED", "INSUFFICIENT_PERMISSIONS"], local.source_account_status)
 
   # Find existing restore account for this AWS account
   existing_restore_account = [
     for acc in coalesce(data.eon_restore_accounts.existing.accounts, []) :
     acc if acc.provider_account_id == local.aws_account_id
   ]
-  restore_account_exists       = length(local.existing_restore_account) > 0
-  restore_account_id           = local.restore_account_exists ? local.existing_restore_account[0].id : null
-  restore_account_status       = local.restore_account_exists ? local.existing_restore_account[0].status : null
-  restore_account_disconnected = local.restore_account_exists && local.restore_account_status == "DISCONNECTED"
+  restore_account_exists          = length(local.existing_restore_account) > 0
+  restore_account_id              = local.restore_account_exists ? local.existing_restore_account[0].id : null
+  restore_account_status          = local.restore_account_exists ? local.existing_restore_account[0].status : null
+  restore_account_needs_reconnect = local.restore_account_exists && contains(["DISCONNECTED", "INSUFFICIENT_PERMISSIONS"], local.restore_account_status)
 }
 
 # -----------------------------------------------------------------------------
@@ -121,9 +121,9 @@ resource "time_sleep" "wait_for_restore_iam" {
 # Register Source Account with Eon
 # -----------------------------------------------------------------------------
 
-# Reconnect disconnected source account via API
+# Reconnect source account if disconnected or has insufficient permissions
 resource "terraform_data" "reconnect_source_account" {
-  count = var.enable_source_account && var.reconnect_if_existing && local.source_account_disconnected ? 1 : 0
+  count = var.enable_source_account && var.reconnect_if_existing && local.source_account_needs_reconnect ? 1 : 0
 
   # Trigger reconnect when the role ARN changes
   input = module.aws_source_account[0].eon_source_account_role_arn
@@ -159,12 +159,6 @@ resource "eon_source_account" "this" {
     role_arn = module.aws_source_account[0].eon_source_account_role_arn
   }
 
-  # Empty GCP block required by provider schema (provider bug workaround)
-  gcp {
-    project_id      = ""
-    service_account = ""
-  }
-
   depends_on = [time_sleep.wait_for_source_iam]
 }
 
@@ -172,9 +166,9 @@ resource "eon_source_account" "this" {
 # Register Restore Account with Eon
 # -----------------------------------------------------------------------------
 
-# Reconnect disconnected restore account via API
+# Reconnect restore account if disconnected or has insufficient permissions
 resource "terraform_data" "reconnect_restore_account" {
-  count = var.enable_restore_account && var.reconnect_if_existing && local.restore_account_disconnected ? 1 : 0
+  count = var.enable_restore_account && var.reconnect_if_existing && local.restore_account_needs_reconnect ? 1 : 0
 
   # Trigger reconnect when the role ARN changes
   input = module.aws_restore_account[0].eon_restore_account_role_arn
@@ -208,12 +202,6 @@ resource "eon_restore_account" "this" {
 
   aws {
     role_arn = module.aws_restore_account[0].eon_restore_account_role_arn
-  }
-
-  # Empty GCP block required by provider schema (provider bug workaround)
-  gcp {
-    project_id      = ""
-    service_account = ""
   }
 
   depends_on = [time_sleep.wait_for_restore_iam]

@@ -52,20 +52,20 @@ locals {
     for acc in data.eon_source_accounts.existing.accounts :
     acc if acc.provider_account_id == var.project_id
   ]
-  source_account_exists       = length(local.existing_source_account) > 0
-  source_account_id           = local.source_account_exists ? local.existing_source_account[0].id : null
-  source_account_status       = local.source_account_exists ? local.existing_source_account[0].status : null
-  source_account_disconnected = local.source_account_exists && local.source_account_status == "DISCONNECTED"
+  source_account_exists          = length(local.existing_source_account) > 0
+  source_account_id              = local.source_account_exists ? local.existing_source_account[0].id : null
+  source_account_status          = local.source_account_exists ? local.existing_source_account[0].status : null
+  source_account_needs_reconnect = local.source_account_exists && contains(["DISCONNECTED", "INSUFFICIENT_PERMISSIONS"], local.source_account_status)
 
   # Find existing restore account for this GCP project
   existing_restore_account = [
     for acc in data.eon_restore_accounts.existing.accounts :
     acc if acc.provider_account_id == var.project_id
   ]
-  restore_account_exists       = length(local.existing_restore_account) > 0
-  restore_account_id           = local.restore_account_exists ? local.existing_restore_account[0].id : null
-  restore_account_status       = local.restore_account_exists ? local.existing_restore_account[0].status : null
-  restore_account_disconnected = local.restore_account_exists && local.restore_account_status == "DISCONNECTED"
+  restore_account_exists          = length(local.existing_restore_account) > 0
+  restore_account_id              = local.restore_account_exists ? local.existing_restore_account[0].id : null
+  restore_account_status          = local.restore_account_exists ? local.existing_restore_account[0].status : null
+  restore_account_needs_reconnect = local.restore_account_exists && contains(["DISCONNECTED", "INSUFFICIENT_PERMISSIONS"], local.restore_account_status)
 }
 
 # -----------------------------------------------------------------------------
@@ -165,9 +165,9 @@ resource "time_sleep" "wait_for_iam_propagation" {
 # Register Source Account with Eon
 # -----------------------------------------------------------------------------
 
-# Reconnect disconnected source account via API
+# Reconnect source account if disconnected or has insufficient permissions
 resource "terraform_data" "reconnect_source_account" {
-  count = var.enable_source_account && var.reconnect_if_existing && local.source_account_disconnected ? 1 : 0
+  count = var.enable_source_account && var.reconnect_if_existing && local.source_account_needs_reconnect ? 1 : 0
 
   input = module.gcp_source_setup.service_account_emails.source_sa
 
@@ -212,9 +212,9 @@ resource "eon_source_account" "this" {
 # Register Restore Account with Eon
 # -----------------------------------------------------------------------------
 
-# Reconnect disconnected restore account via API
+# Reconnect restore account if disconnected or has insufficient permissions
 resource "terraform_data" "reconnect_restore_account" {
-  count = var.enable_restore_account && var.reconnect_if_existing && local.restore_account_disconnected ? 1 : 0
+  count = var.enable_restore_account && var.reconnect_if_existing && local.restore_account_needs_reconnect ? 1 : 0
 
   input = module.gcp_restore_setup.service_account_emails.restore_sa
 
