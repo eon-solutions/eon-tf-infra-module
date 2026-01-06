@@ -47,9 +47,9 @@ locals {
     for acc in coalesce(data.eon_source_accounts.existing.accounts, []) :
     acc if acc.provider_account_id == local.aws_account_id
   ]
-  source_account_exists         = length(local.existing_source_account) > 0
-  source_account_id             = local.source_account_exists ? local.existing_source_account[0].id : null
-  source_account_status         = local.source_account_exists ? local.existing_source_account[0].status : null
+  source_account_exists          = length(local.existing_source_account) > 0
+  source_account_id              = local.source_account_exists ? local.existing_source_account[0].id : null
+  source_account_status          = local.source_account_exists ? local.existing_source_account[0].status : null
   source_account_needs_reconnect = local.source_account_exists && contains(["DISCONNECTED", "INSUFFICIENT_PERMISSIONS"], local.source_account_status)
 
   # Find existing restore account for this AWS account
