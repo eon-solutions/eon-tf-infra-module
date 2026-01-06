@@ -50,7 +50,7 @@ locals {
   source_account_exists          = length(local.existing_source_account) > 0
   source_account_id              = local.source_account_exists ? local.existing_source_account[0].id : null
   source_account_status          = local.source_account_exists ? local.existing_source_account[0].status : null
-  source_account_needs_reconnect = local.source_account_exists && local.source_account_status != null && contains(["DISCONNECTED", "INSUFFICIENT_PERMISSIONS"], local.source_account_status)
+  source_account_needs_reconnect = local.source_account_exists && contains(["DISCONNECTED", "INSUFFICIENT_PERMISSIONS"], coalesce(local.source_account_status, ""))
 
   # Find existing restore account for this AWS account
   existing_restore_account = [
@@ -60,7 +60,7 @@ locals {
   restore_account_exists          = length(local.existing_restore_account) > 0
   restore_account_id              = local.restore_account_exists ? local.existing_restore_account[0].id : null
   restore_account_status          = local.restore_account_exists ? local.existing_restore_account[0].status : null
-  restore_account_needs_reconnect = local.restore_account_exists && local.restore_account_status != null && contains(["DISCONNECTED", "INSUFFICIENT_PERMISSIONS"], local.restore_account_status)
+  restore_account_needs_reconnect = local.restore_account_exists && contains(["DISCONNECTED", "INSUFFICIENT_PERMISSIONS"], coalesce(local.restore_account_status, ""))
 }
 
 # -----------------------------------------------------------------------------
