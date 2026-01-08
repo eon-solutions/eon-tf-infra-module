@@ -3,19 +3,16 @@ terraform {
 
   required_providers {
     azurerm = {
-      source                = "hashicorp/azurerm"
-      version               = ">= 3.83, < 4.0"
-      configuration_aliases = [azurerm]
+      source  = "hashicorp/azurerm"
+      version = ">= 3.83, < 4.0"
     }
     azuread = {
-      source                = "hashicorp/azuread"
-      version               = "~> 2.0"
-      configuration_aliases = [azuread]
+      source  = "hashicorp/azuread"
+      version = "~> 2.0"
     }
     eon = {
-      source                = "eon-io/eon"
-      version               = "~> 2.0"
-      configuration_aliases = [eon]
+      source  = "eon-io/eon"
+      version = "~> 2.0"
     }
   }
 }
