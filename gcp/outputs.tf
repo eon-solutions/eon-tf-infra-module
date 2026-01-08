@@ -12,12 +12,12 @@ output "project_id" {
 # =============================================================================
 
 output "source_service_account_email" {
-  value       = module.gcp_source_setup.service_account_emails.source_sa
+  value       = var.enable_source_account ? module.gcp_source_setup[0].service_account_emails.source_sa : null
   description = "The email of the Eon source (discovery) service account"
 }
 
 output "source_backup_service_account_email" {
-  value       = module.gcp_source_setup.service_account_emails.backup_sa
+  value       = var.enable_source_account ? module.gcp_source_setup[0].service_account_emails.backup_sa : null
   description = "The email of the Eon backup service account"
 }
 
@@ -44,12 +44,12 @@ output "eon_source_account_status" {
 # =============================================================================
 
 output "restore_service_account_email" {
-  value       = module.gcp_restore_setup.service_account_emails.restore_sa
+  value       = var.enable_restore_account ? module.gcp_restore_setup[0].service_account_emails.restore_sa : null
   description = "The email of the Eon restore service account"
 }
 
 output "restore_node_service_account_email" {
-  value       = module.gcp_restore_setup.service_account_emails.restore_node_sa
+  value       = var.enable_restore_account ? module.gcp_restore_setup[0].service_account_emails.restore_node_sa : null
   description = "The email of the Eon restore node service account"
 }
 
@@ -76,11 +76,11 @@ output "eon_restore_account_status" {
 # =============================================================================
 
 output "source_deployment_scope" {
-  value       = module.gcp_source_setup.deployment_scope
+  value       = var.enable_source_account ? module.gcp_source_setup[0].deployment_scope : null
   description = "Information about the source account deployment scope and configuration"
 }
 
 output "restore_deployment_scope" {
-  value       = module.gcp_restore_setup.deployment_scope
+  value       = var.enable_restore_account ? module.gcp_restore_setup[0].deployment_scope : null
   description = "Information about the restore account deployment scope and configuration"
 }

@@ -73,6 +73,11 @@ module "azure_source_account" {
   count  = var.enable_source_account ? 1 : 0
   source = "https://eon.blob.core.windows.net/public/onboarding/v1.1.3/terraform/source.zip"
 
+  providers = {
+    azurerm = azurerm
+    azuread = azuread
+  }
+
   subscription_id     = var.subscription_id
   management_group_id = var.management_group_id
   management_app_id   = var.management_app_id
@@ -92,6 +97,11 @@ module "azure_source_account" {
 module "azure_restore_account" {
   count  = var.enable_restore_account ? 1 : 0
   source = "https://eon.blob.core.windows.net/public/onboarding/v1.1.3/terraform/restore.zip"
+
+  providers = {
+    azurerm = azurerm
+    azuread = azuread
+  }
 
   project_id            = var.eon_project_id
   subscription_id       = var.subscription_id

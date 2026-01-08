@@ -71,6 +71,10 @@ module "aws_source_account" {
   count  = var.enable_source_account ? 1 : 0
   source = "https://eon-public-b2b628cc-1d96-4fda-8dae-c3b1ad3ea03b.s3.amazonaws.com/eon-aws-source-account-tf.zip"
 
+  providers = {
+    aws = aws
+  }
+
   eon_account_id      = var.eon_account_id
   scanning_account_id = var.scanning_account_id
   role_name           = var.source_role_name
@@ -92,6 +96,10 @@ module "aws_source_account" {
 module "aws_restore_account" {
   count  = var.enable_restore_account ? 1 : 0
   source = "https://eon-public-b2b628cc-1d96-4fda-8dae-c3b1ad3ea03b.s3.amazonaws.com/eon-aws-restore-account-tf.zip"
+
+  providers = {
+    aws = aws
+  }
 
   eon_account_id         = var.eon_account_id
   role_name              = var.restore_role_name
