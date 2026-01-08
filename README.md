@@ -28,8 +28,25 @@ Terraform modules for provisioning cloud accounts to [Eon](https://eon.io) backu
 ### AWS
 
 ```hcl
+provider "aws" {
+  region = "us-east-1"
+}
+
+provider "eon" {
+  client_id     = var.eon_client_id
+  client_secret = var.eon_client_secret
+  endpoint      = var.eon_endpoint
+  project_id    = var.eon_project_id
+}
+
 module "eon_aws" {
   source = "github.com/eon-solutions/eon-tf-infra-module//aws"
+
+  # Required: Pass providers explicitly
+  providers = {
+    aws = aws
+    eon = eon
+  }
 
   eon_account_id      = "your-eon-account-uuid"
   eon_endpoint        = "https://api.eon.io"
@@ -48,8 +65,29 @@ See [`examples/aws/`](./examples/aws/) for a complete working example.
 ### Azure
 
 ```hcl
+provider "azurerm" {
+  features {}
+  subscription_id = var.subscription_id
+}
+
+provider "azuread" {}
+
+provider "eon" {
+  client_id     = var.eon_client_id
+  client_secret = var.eon_client_secret
+  endpoint      = var.eon_endpoint
+  project_id    = var.eon_project_id
+}
+
 module "eon_azure" {
   source = "github.com/eon-solutions/eon-tf-infra-module//azure"
+
+  # Required: Pass providers explicitly
+  providers = {
+    azurerm = azurerm
+    azuread = azuread
+    eon     = eon
+  }
 
   # Eon API configuration
   eon_endpoint      = "https://api.eon.io"
@@ -76,8 +114,26 @@ See [`examples/azure/`](./examples/azure/) for a complete working example.
 ### GCP
 
 ```hcl
+provider "google" {
+  project = var.project_id
+  region  = var.gcp_region
+}
+
+provider "eon" {
+  client_id     = var.eon_client_id
+  client_secret = var.eon_client_secret
+  endpoint      = var.eon_endpoint
+  project_id    = var.eon_project_id
+}
+
 module "eon_gcp" {
   source = "github.com/eon-solutions/eon-tf-infra-module//gcp"
+
+  # Required: Pass providers explicitly
+  providers = {
+    google = google
+    eon    = eon
+  }
 
   # Eon API configuration
   eon_endpoint      = "https://api.eon.io"
@@ -97,6 +153,69 @@ module "eon_gcp" {
 ```
 
 See [`examples/gcp/`](./examples/gcp/) for a complete working example.
+
+## Provider Configuration
+
+All modules require explicit provider configuration using the `providers` block. This is necessary because the modules use `configuration_aliases` to support flexible provider configurations.
+
+### Why Explicit Providers?
+
+1. **Multi-account deployments**: You can provision multiple accounts by passing different provider configurations to separate module instances
+2. **Provider aliasing**: Supports scenarios where you need to use aliased providers (e.g., different AWS regions)
+3. **Terraform best practices**: Explicit provider passing makes dependencies clear and prevents implicit provider inheritance issues
+
+### Required Providers by Module
+
+| Module | Required Providers |
+|--------|-------------------|
+| AWS | `aws`, `eon` |
+| Azure | `azurerm`, `azuread`, `eon` |
+| GCP | `google`, `eon` |
+
+### Multi-Account Example (AWS)
+
+```hcl
+provider "aws" {
+  alias  = "production"
+  region = "us-east-1"
+  profile = "production"
+}
+
+provider "aws" {
+  alias  = "staging"
+  region = "us-west-2"
+  profile = "staging"
+}
+
+provider "eon" {
+  client_id     = var.eon_client_id
+  client_secret = var.eon_client_secret
+  endpoint      = var.eon_endpoint
+  project_id    = var.eon_project_id
+}
+
+module "eon_aws_production" {
+  source = "github.com/eon-solutions/eon-tf-infra-module//aws"
+
+  providers = {
+    aws = aws.production
+    eon = eon
+  }
+
+  # ... configuration
+}
+
+module "eon_aws_staging" {
+  source = "github.com/eon-solutions/eon-tf-infra-module//aws"
+
+  providers = {
+    aws = aws.staging
+    eon = eon
+  }
+
+  # ... configuration
+}
+```
 
 ## Modules
 
