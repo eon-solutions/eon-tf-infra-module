@@ -28,6 +28,19 @@ Terraform modules for provisioning cloud accounts to [Eon](https://eon.io) backu
 ### AWS
 
 ```hcl
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+    eon = {
+      source  = "eon-io/eon"
+      version = "~> 2.0"
+    }
+  }
+}
+
 provider "aws" {
   region = "us-east-1"
 }
@@ -65,6 +78,23 @@ See [`examples/aws/`](./examples/aws/) for a complete working example.
 ### Azure
 
 ```hcl
+terraform {
+  required_providers {
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = ">= 3.83, < 4.0"
+    }
+    azuread = {
+      source  = "hashicorp/azuread"
+      version = "~> 2.0"
+    }
+    eon = {
+      source  = "eon-io/eon"
+      version = "~> 2.0"
+    }
+  }
+}
+
 provider "azurerm" {
   features {}
   subscription_id = var.subscription_id
@@ -114,6 +144,19 @@ See [`examples/azure/`](./examples/azure/) for a complete working example.
 ### GCP
 
 ```hcl
+terraform {
+  required_providers {
+    google = {
+      source  = "hashicorp/google"
+      version = ">= 4.0"
+    }
+    eon = {
+      source  = "eon-io/eon"
+      version = "~> 2.0"
+    }
+  }
+}
+
 provider "google" {
   project = var.project_id
   region  = var.gcp_region
@@ -175,15 +218,28 @@ All modules require explicit provider configuration using the `providers` block.
 ### Multi-Account Example (AWS)
 
 ```hcl
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+    eon = {
+      source  = "eon-io/eon"
+      version = "~> 2.0"
+    }
+  }
+}
+
 provider "aws" {
-  alias  = "production"
-  region = "us-east-1"
+  alias   = "production"
+  region  = "us-east-1"
   profile = "production"
 }
 
 provider "aws" {
-  alias  = "staging"
-  region = "us-west-2"
+  alias   = "staging"
+  region  = "us-west-2"
   profile = "staging"
 }
 
