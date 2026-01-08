@@ -62,6 +62,12 @@ provider "eon" {
 module "eon_azure" {
   source = "../../azure"
 
+  providers = {
+    azurerm = azurerm
+    azuread = azuread
+    eon     = eon
+  }
+
   # Eon API configuration (same as provider)
   eon_endpoint      = var.eon_endpoint
   eon_client_id     = var.eon_client_id
