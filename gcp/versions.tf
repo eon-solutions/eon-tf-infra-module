@@ -3,12 +3,14 @@ terraform {
 
   required_providers {
     google = {
-      source  = "hashicorp/google"
-      version = ">= 4.0"
+      source                = "hashicorp/google"
+      version               = ">= 4.0"
+      configuration_aliases = [google]
     }
     eon = {
-      source  = "eon-io/eon"
-      version = "~> 2.0"
+      source                = "eon-io/eon"
+      version               = "~> 2.0"
+      configuration_aliases = [eon]
     }
     time = {
       source  = "hashicorp/time"

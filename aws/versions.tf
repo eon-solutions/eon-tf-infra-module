@@ -3,12 +3,14 @@ terraform {
 
   required_providers {
     aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"
+      source                = "hashicorp/aws"
+      version               = "~> 5.0"
+      configuration_aliases = [aws]
     }
     eon = {
-      source  = "eon-io/eon"
-      version = "~> 2.0"
+      source                = "eon-io/eon"
+      version               = "~> 2.0"
+      configuration_aliases = [eon]
     }
     time = {
       source  = "hashicorp/time"
