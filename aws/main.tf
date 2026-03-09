@@ -87,6 +87,8 @@ module "aws_source_account" {
   enable_temporary_volumes_method           = var.enable_temporary_volumes_method
   enable_aurora_clone                       = var.enable_aurora_clone
   enable_s3_inventory_management            = var.enable_s3_inventory_management
+
+  permissions_boundary_name = coalesce(var.permissions_boundary_name, "")
 }
 
 # -----------------------------------------------------------------------------

@@ -185,3 +185,13 @@ variable "restore_enable_account_metrics" {
   description = "Allow Eon to send restore metrics to CloudWatch in your restore account"
   default     = false
 }
+
+# =============================================================================
+# IAM Permissions Boundary
+# =============================================================================
+
+variable "permissions_boundary_name" {
+  type        = string
+  description = "Name of an IAM permissions boundary policy to attach to all roles created by this module. Leave null or empty to skip."
+  default     = null
+}
