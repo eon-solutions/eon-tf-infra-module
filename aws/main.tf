@@ -88,7 +88,7 @@ module "aws_source_account" {
   enable_aurora_clone                       = var.enable_aurora_clone
   enable_s3_inventory_management            = var.enable_s3_inventory_management
 
-  permissions_boundary_name = coalesce(var.permissions_boundary_name, "")
+  permissions_boundary_name = var.permissions_boundary_name != null ? var.permissions_boundary_name : ""
 }
 
 # -----------------------------------------------------------------------------
