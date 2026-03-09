@@ -106,6 +106,8 @@ module "aws_restore_account" {
   eon_account_id         = var.eon_account_id
   role_name              = var.restore_role_name
   enable_account_metrics = var.restore_enable_account_metrics
+
+  permissions_boundary_name = var.permissions_boundary_name != null ? var.permissions_boundary_name : ""
 }
 
 # -----------------------------------------------------------------------------
@@ -158,7 +160,7 @@ resource "terraform_data" "reconnect_source_account" {
   depends_on = [time_sleep.wait_for_source_iam]
 }
 
-# Create new source account only if it doesn't exist
+# Create source account only if it doesn't exist
 resource "eon_source_account" "this" {
   count = var.enable_source_account && !local.source_account_exists ? 1 : 0
 
@@ -203,7 +205,7 @@ resource "terraform_data" "reconnect_restore_account" {
   depends_on = [time_sleep.wait_for_restore_iam]
 }
 
-# Create new restore account only if it doesn't exist
+# Create restore account only if it doesn't exist
 resource "eon_restore_account" "this" {
   count = var.enable_restore_account && !local.restore_account_exists ? 1 : 0
 
