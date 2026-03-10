@@ -149,6 +149,13 @@ variable "firestore_location" {
   default     = "nam5"
 }
 
+variable "eon_restore_regions" {
+  type        = list(string)
+  description = "Deprecated: restore regions are now managed by the Eon control plane. This variable is ignored."
+  default     = null
+  nullable    = true
+}
+
 # =============================================================================
 # Feature Toggles
 # =============================================================================
