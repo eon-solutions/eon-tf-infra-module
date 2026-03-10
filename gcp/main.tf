@@ -112,9 +112,8 @@ module "gcp_restore_setup" {
   control_plane_service_account = var.control_plane_service_account
 
   # Restore-specific options
-  host_project_id     = var.host_project_id
-  firestore_location  = var.firestore_location
-  eon_restore_regions = var.eon_restore_regions
+  host_project_id    = var.host_project_id
+  firestore_location = var.firestore_location
 
   # Feature toggles
   enable_gcs      = var.enable_gcs

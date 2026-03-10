@@ -149,12 +149,6 @@ variable "firestore_location" {
   default     = "nam5"
 }
 
-variable "eon_restore_regions" {
-  type        = list(string)
-  description = "List of GCP regions where restore buckets will be created. Defaults to US regions."
-  default     = ["us-east1", "us-east4", "us-east5", "us-central1", "us-west1", "us-west2", "us-west3", "us-west4", "us-south1"]
-}
-
 # =============================================================================
 # Feature Toggles
 # =============================================================================

@@ -103,8 +103,6 @@ module "eon_gcp" {
   # Optional: Firestore location for restore command results
   # firestore_location = "nam5"
 
-  # Optional: Customize restore bucket regions (defaults to US regions)
-  # eon_restore_regions = ["us-east1", "us-central1", "europe-west1"]
 }
 
 # -----------------------------------------------------------------------------
