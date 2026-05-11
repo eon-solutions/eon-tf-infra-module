@@ -71,7 +71,8 @@ variable "project_id" {
 
 variable "control_plane_service_account" {
   type        = string
-  description = "The GCP Workload Identity service account email that will impersonate the Eon service account. Provided by Eon."
+  description = "The Eon control plane service account email that impersonates the customer's discovery SA. Defaults to the Eon production control plane SA — override only for non-prod Eon deployments."
+  default     = "control-plane@eon-prod-454910.iam.gserviceaccount.com"
 
   validation {
     condition     = can(regex("^[a-z0-9\\-]+@[a-z0-9\\-]+\\.iam\\.gserviceaccount\\.com$", var.control_plane_service_account))
