@@ -41,7 +41,7 @@ variable "enable_restore_account" {
 
 variable "reconnect_if_existing" {
   type        = bool
-  description = "If an account already exists in Eon but is disconnected, automatically reconnect it. When false, existing disconnected accounts will be left as-is."
+  description = "Deprecated and unused; retained for backward compatibility. Setting it has no effect."
   default     = true
 }
 

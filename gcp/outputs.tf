@@ -26,17 +26,13 @@ output "source_backup_service_account_email" {
 # =============================================================================
 
 output "eon_source_account_id" {
-  value = var.enable_source_account ? (
-    local.source_account_exists ? local.source_account_id : eon_source_account.this[0].id
-  ) : null
+  value       = var.enable_source_account ? eon_source_account.this[0].id : null
   description = "The Eon source account ID - reference this for backup policies"
 }
 
 output "eon_source_account_status" {
-  value = var.enable_source_account ? (
-    local.source_account_exists ? local.source_account_status : eon_source_account.this[0].status
-  ) : null
-  description = "The connection status of the source account in Eon. Note: after reconnection, run 'terraform apply' again to see updated status."
+  value       = var.enable_source_account ? eon_source_account.this[0].status : null
+  description = "The connection status of the source account in Eon"
 }
 
 # =============================================================================
@@ -58,17 +54,13 @@ output "restore_node_service_account_email" {
 # =============================================================================
 
 output "eon_restore_account_id" {
-  value = var.enable_restore_account ? (
-    local.restore_account_exists ? local.restore_account_id : eon_restore_account.this[0].id
-  ) : null
+  value       = var.enable_restore_account ? eon_restore_account.this[0].id : null
   description = "The Eon restore account ID - reference this for restore operations"
 }
 
 output "eon_restore_account_status" {
-  value = var.enable_restore_account ? (
-    local.restore_account_exists ? local.restore_account_status : eon_restore_account.this[0].status
-  ) : null
-  description = "The connection status of the restore account in Eon. Note: after reconnection, run 'terraform apply' again to see updated status."
+  value       = var.enable_restore_account ? eon_restore_account.this[0].status : null
+  description = "The connection status of the restore account in Eon"
 }
 
 # =============================================================================

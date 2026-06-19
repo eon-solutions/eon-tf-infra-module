@@ -9,7 +9,7 @@ terraform {
     }
     eon = {
       source                = "eon-io/eon"
-      version               = "~> 2.0"
+      version               = ">= 2.0.18, < 3.0.0"
       configuration_aliases = [eon]
     }
     time = {

@@ -29,42 +29,6 @@
 # =============================================================================
 
 # -----------------------------------------------------------------------------
-# Data Sources
-# -----------------------------------------------------------------------------
-
-# Get existing source accounts from Eon
-data "eon_source_accounts" "existing" {}
-
-# Get existing restore accounts from Eon
-data "eon_restore_accounts" "existing" {}
-
-# -----------------------------------------------------------------------------
-# Locals
-# -----------------------------------------------------------------------------
-
-locals {
-  # Find existing source account for this GCP project
-  existing_source_account = [
-    for acc in coalesce(data.eon_source_accounts.existing.accounts, []) :
-    acc if acc.provider_account_id == var.project_id
-  ]
-  source_account_exists          = length(local.existing_source_account) > 0
-  source_account_id              = local.source_account_exists ? local.existing_source_account[0].id : null
-  source_account_status          = local.source_account_exists ? local.existing_source_account[0].status : null
-  source_account_needs_reconnect = local.source_account_exists && contains(["DISCONNECTED", "INSUFFICIENT_PERMISSIONS"], coalesce(local.source_account_status, "NONE"))
-
-  # Find existing restore account for this GCP project
-  existing_restore_account = [
-    for acc in coalesce(data.eon_restore_accounts.existing.accounts, []) :
-    acc if acc.provider_account_id == var.project_id
-  ]
-  restore_account_exists          = length(local.existing_restore_account) > 0
-  restore_account_id              = local.restore_account_exists ? local.existing_restore_account[0].id : null
-  restore_account_status          = local.restore_account_exists ? local.existing_restore_account[0].status : null
-  restore_account_needs_reconnect = local.restore_account_exists && contains(["DISCONNECTED", "INSUFFICIENT_PERMISSIONS"], coalesce(local.restore_account_status, "NONE"))
-}
-
-# -----------------------------------------------------------------------------
 # GCP Source Account Infrastructure
 # -----------------------------------------------------------------------------
 
@@ -155,35 +119,11 @@ resource "time_sleep" "wait_for_restore_iam_propagation" {
 # Register Source Account with Eon
 # -----------------------------------------------------------------------------
 
-# Reconnect source account if disconnected or has insufficient permissions
-resource "terraform_data" "reconnect_source_account" {
-  count = var.enable_source_account && var.reconnect_if_existing && local.source_account_needs_reconnect ? 1 : 0
-
-  input = module.gcp_source_setup[0].service_account_emails.source_sa
-
-  provisioner "local-exec" {
-    command = <<-EOT
-      set -e
-      TOKEN=$(curl -sf -X POST '${var.eon_endpoint}/api/v1/token' \
-        -H 'Content-Type: application/json' \
-        -d '{"clientId": "${var.eon_client_id}", "clientSecret": "${var.eon_client_secret}"}' \
-        | grep -o '"accessToken":"[^"]*"' | cut -d'"' -f4)
-
-      curl -sf -X POST '${var.eon_endpoint}/api/v1/projects/${var.eon_project_id}/source-accounts/${local.source_account_id}/reconnect' \
-        -H "Authorization: Bearer $TOKEN" \
-        -H 'Content-Type: application/json' \
-        -d '{"sourceAccountAttributes": {"cloudProvider": "GCP", "gcp": {"serviceAccount": "${module.gcp_source_setup[0].service_account_emails.source_sa}"}}}'
-
-      echo "Successfully reconnected source account ${local.source_account_id}"
-    EOT
-  }
-
-  depends_on = [time_sleep.wait_for_source_iam_propagation]
-}
-
-# Create new source account only if enabled and doesn't exist
+# Register the source account with Eon. Re-applying is idempotent: an existing
+# matching account is adopted into state, and a disconnected account is
+# reconnected in place.
 resource "eon_source_account" "this" {
-  count = var.enable_source_account && !local.source_account_exists ? 1 : 0
+  count = var.enable_source_account ? 1 : 0
 
   cloud_provider = "GCP"
   name           = var.source_account_name != null ? var.source_account_name : "GCP-${var.project_id}"
@@ -200,35 +140,11 @@ resource "eon_source_account" "this" {
 # Register Restore Account with Eon
 # -----------------------------------------------------------------------------
 
-# Reconnect restore account if disconnected or has insufficient permissions
-resource "terraform_data" "reconnect_restore_account" {
-  count = var.enable_restore_account && var.reconnect_if_existing && local.restore_account_needs_reconnect ? 1 : 0
-
-  input = module.gcp_restore_setup[0].service_account_emails.restore_sa
-
-  provisioner "local-exec" {
-    command = <<-EOT
-      set -e
-      TOKEN=$(curl -sf -X POST '${var.eon_endpoint}/api/v1/token' \
-        -H 'Content-Type: application/json' \
-        -d '{"clientId": "${var.eon_client_id}", "clientSecret": "${var.eon_client_secret}"}' \
-        | grep -o '"accessToken":"[^"]*"' | cut -d'"' -f4)
-
-      curl -sf -X POST '${var.eon_endpoint}/api/v1/projects/${var.eon_project_id}/restore-accounts/${local.restore_account_id}/reconnect' \
-        -H "Authorization: Bearer $TOKEN" \
-        -H 'Content-Type: application/json' \
-        -d '{"restoreAccountAttributes": {"cloudProvider": "GCP", "gcp": {"serviceAccount": "${module.gcp_restore_setup[0].service_account_emails.restore_sa}"}}}'
-
-      echo "Successfully reconnected restore account ${local.restore_account_id}"
-    EOT
-  }
-
-  depends_on = [time_sleep.wait_for_restore_iam_propagation]
-}
-
-# Create new restore account only if enabled and doesn't exist
+# Register the restore account with Eon. Re-applying is idempotent: an existing
+# matching account is adopted into state. To change attributes of an existing
+# restore account, taint it so it is recreated.
 resource "eon_restore_account" "this" {
-  count = var.enable_restore_account && !local.restore_account_exists ? 1 : 0
+  count = var.enable_restore_account ? 1 : 0
 
   cloud_provider = "GCP"
   name           = var.restore_account_name != null ? var.restore_account_name : "GCP-${var.project_id}"
