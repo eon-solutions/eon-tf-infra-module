@@ -61,6 +61,14 @@ module "aws_source_account" {
   enable_temporary_volumes_method           = var.enable_temporary_volumes_method
   enable_aurora_clone                       = var.enable_aurora_clone
   enable_s3_inventory_management            = var.enable_s3_inventory_management
+  enable_dynamodb_export                    = var.enable_dynamodb_export
+  enable_dynamodb_auto_enable_pitr          = var.enable_dynamodb_auto_enable_pitr
+  enable_postgres_cdc                       = var.enable_postgres_cdc
+  enable_aws_backup                         = var.enable_aws_backup
+  enable_aws_native_pitr                    = var.enable_aws_native_pitr
+  enable_opensearch_backup                  = var.enable_opensearch_backup
+  enable_aws_keyspaces                      = var.enable_aws_keyspaces
+  enable_aws_keyspaces_provision            = var.enable_aws_keyspaces_provision
 
   permissions_boundary_name = var.permissions_boundary_name != null ? var.permissions_boundary_name : ""
 }
@@ -80,6 +88,11 @@ module "aws_restore_account" {
   eon_account_id         = var.eon_account_id
   role_name              = var.restore_role_name
   enable_account_metrics = var.restore_enable_account_metrics
+
+  enable_rds_native_pitr      = var.restore_enable_rds_native_pitr
+  enable_dynamodb_tag_restore = var.restore_enable_dynamodb_tag_restore
+  enable_aws_backup_restore   = var.restore_enable_aws_backup_restore
+  enable_opensearch_restore   = var.restore_enable_opensearch_restore
 
   permissions_boundary_name = var.permissions_boundary_name != null ? var.permissions_boundary_name : ""
 }
