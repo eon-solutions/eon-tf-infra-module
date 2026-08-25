@@ -176,6 +176,54 @@ variable "enable_s3_inventory_management" {
   default     = true
 }
 
+variable "enable_dynamodb_export" {
+  type        = bool
+  description = "Allow Eon to export DynamoDB tables for incremental-export backups"
+  default     = true
+}
+
+variable "enable_dynamodb_auto_enable_pitr" {
+  type        = bool
+  description = "Allow Eon to enable point-in-time recovery (PiTR) on DynamoDB tables for export-based backups"
+  default     = false
+}
+
+variable "enable_postgres_cdc" {
+  type        = bool
+  description = "Allow Eon to protect PostgreSQL databases using CDC. Takes effect only when enable_aurora_clone is also true."
+  default     = false
+}
+
+variable "enable_aws_backup" {
+  type        = bool
+  description = "Allow Eon to backup resources using AWS Backup service"
+  default     = true
+}
+
+variable "enable_aws_native_pitr" {
+  type        = bool
+  description = "Allow Eon to manage AWS Backup plans for Native PITR policies on RDS resources"
+  default     = false
+}
+
+variable "enable_opensearch_backup" {
+  type        = bool
+  description = "Allow Eon to orchestrate native OpenSearch/Elasticsearch snapshot backups (register the snapshot repository and drive Snapshot Management cadence and retention)"
+  default     = false
+}
+
+variable "enable_aws_keyspaces" {
+  type        = bool
+  description = "Allow Eon to backup AWS Keyspaces tables"
+  default     = true
+}
+
+variable "enable_aws_keyspaces_provision" {
+  type        = bool
+  description = "Allow Eon to modify AWS Keyspaces table provisioning and capacity settings. Takes effect only when enable_aws_keyspaces is also true."
+  default     = true
+}
+
 # =============================================================================
 # Restore Account Feature Toggles
 # =============================================================================
@@ -183,6 +231,30 @@ variable "enable_s3_inventory_management" {
 variable "restore_enable_account_metrics" {
   type        = bool
   description = "Allow Eon to send restore metrics to CloudWatch in your restore account"
+  default     = false
+}
+
+variable "restore_enable_rds_native_pitr" {
+  type        = bool
+  description = "Allow Eon to perform native point-in-time restore for RDS databases"
+  default     = true
+}
+
+variable "restore_enable_dynamodb_tag_restore" {
+  type        = bool
+  description = "Allow Eon to restore original DynamoDB table tags. Used for restore via S3 as ImportTable doesn't support tags on creation."
+  default     = true
+}
+
+variable "restore_enable_aws_backup_restore" {
+  type        = bool
+  description = "Allow Eon to start AWS Backup restore jobs (e.g., FSx, EFS) for Eon-tagged recovery points"
+  default     = true
+}
+
+variable "restore_enable_opensearch_restore" {
+  type        = bool
+  description = "Allow Eon to restore native OpenSearch/Elasticsearch snapshots into a new managed domain (create the staging snapshot bucket, create the domain, and drive the restore API)"
   default     = false
 }
 
